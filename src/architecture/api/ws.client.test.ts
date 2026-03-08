@@ -58,9 +58,10 @@ beforeAll(() => {
     }
   ).CLOSED = 3;
   vi.stubGlobal('WebSocket', WebSocketCtor);
-  if (typeof window !== 'undefined')
-    (window as unknown as { WebSocket: typeof WebSocketCtor }).WebSocket =
-      WebSocketCtor;
+  if (globalThis.window !== undefined)
+    (
+      globalThis.window as unknown as { WebSocket: typeof WebSocketCtor }
+    ).WebSocket = WebSocketCtor;
 });
 
 beforeEach(() => {

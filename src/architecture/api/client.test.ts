@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { APIClient, HttpError, apiClient } from './client';
+import { HttpError, apiClient } from './client';
 
 const baseUrl = 'http://localhost:3001/api/';
 let mockFetch: ReturnType<typeof vi.fn>;
@@ -56,7 +56,7 @@ describe('APIClient', () => {
         new Response(JSON.stringify([]), { status: 200 })
       );
 
-      await apiClient.get('users', { a: 1, b: undefined, c: null });
+      await apiClient.get('users', { a: 1, b: undefined, c: undefined });
 
       expect(mockFetch).toHaveBeenCalledWith(
         `${baseUrl}users?a=1`,
@@ -200,9 +200,9 @@ describe('APIClient', () => {
 
     it('redirects to /login on 401 when window is defined', async () => {
       const locationHref = vi.fn();
-      Object.defineProperty(window, 'location', {
+      Object.defineProperty(globalThis, 'location', {
         value: {
-          ...window.location,
+          ...globalThis.location,
           get href() {
             return '';
           },
