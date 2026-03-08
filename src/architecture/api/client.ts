@@ -65,8 +65,8 @@ async function request<T>(
     // Gestion spéciale pour les erreurs d'authentification
     if (response.status === 401) {
       // Token expiré ou invalide - rediriger vers la page de connexion
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+      if (globalThis.window !== undefined) {
+        globalThis.window.location.href = '/login';
       }
     }
 
