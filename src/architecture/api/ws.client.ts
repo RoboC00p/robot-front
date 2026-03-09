@@ -62,7 +62,11 @@ export class WebSocketClient<TMessage = unknown> {
 
   connect(): void {
     if (globalThis.window === undefined) return;
-    if (this.socket?.readyState === WebSocket.OPEN) return;
+    if (
+      this.socket?.readyState === WebSocket.OPEN ||
+      this.socket?.readyState === WebSocket.CONNECTING
+    )
+      return;
 
     const url = `${this.baseUrl}/${this.config.path.replace(/^\//, '')}`;
     this.socket = new WebSocket(url);

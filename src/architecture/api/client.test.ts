@@ -224,19 +224,8 @@ describe('APIClient', () => {
     });
 
     it('redirects to /login on 401 when window is defined', async () => {
-      const locationHref = vi.fn();
-      Object.defineProperty(globalThis, 'location', {
-        value: {
-          ...globalThis.location,
-          get href() {
-            return '';
-          },
-          set href(v: string) {
-            locationHref(v);
-          },
-        },
-        configurable: true,
-      });
+      const locationStub = { href: '' };
+      vi.stubGlobal('location', locationStub);
 
       mockFetch.mockResolvedValue(
         new Response(JSON.stringify({ message: 'Unauthorized' }), {
@@ -245,7 +234,7 @@ describe('APIClient', () => {
       );
 
       await expect(apiClient.get('protected')).rejects.toThrow(HttpError);
-      expect(locationHref).toHaveBeenCalledWith('/login');
+      expect(locationStub.href).toBe('/login');
     });
   });
 

@@ -1,5 +1,10 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/';
+function normalizeBaseUrl(url: string): string {
+  return url.endsWith('/') ? url : `${url}/`;
+}
+
+const API_BASE_URL = normalizeBaseUrl(
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/'
+);
 
 type params = Record<
   string,
@@ -62,12 +67,8 @@ async function request<T>(
       message = errorText || response.statusText;
     }
 
-    // Gestion spéciale pour les erreurs d'authentification
-    if (response.status === 401) {
-      // Token expiré ou invalide - rediriger vers la page de connexion
-      if (globalThis.window !== undefined) {
-        globalThis.window.location.href = '/login';
-      }
+    if (response.status === 401 && globalThis.window !== undefined) {
+      globalThis.location.href = '/login';
     }
 
     throw new HttpError(response.status, message);
