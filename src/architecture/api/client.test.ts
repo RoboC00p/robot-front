@@ -198,6 +198,31 @@ describe('APIClient', () => {
       });
     });
 
+    it('falls back to statusText when JSON has no message or error', async () => {
+      mockFetch.mockResolvedValue(
+        new Response(JSON.stringify({ code: 42 }), {
+          status: 422,
+          statusText: 'Unprocessable Entity',
+        })
+      );
+
+      await expect(apiClient.get('bad')).rejects.toMatchObject({
+        status: 422,
+        message: 'Unprocessable Entity',
+      });
+    });
+
+    it('falls back to statusText when response body is empty', async () => {
+      mockFetch.mockResolvedValue(
+        new Response('', { status: 503, statusText: 'Service Unavailable' })
+      );
+
+      await expect(apiClient.get('down')).rejects.toMatchObject({
+        status: 503,
+        message: 'Service Unavailable',
+      });
+    });
+
     it('redirects to /login on 401 when window is defined', async () => {
       const locationHref = vi.fn();
       Object.defineProperty(globalThis, 'location', {

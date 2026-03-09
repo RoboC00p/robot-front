@@ -87,6 +87,37 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+describe('getWsBaseUrl via env override', () => {
+  const originalEnv = process.env.NEXT_PUBLIC_API_URL;
+
+  afterEach(() => {
+    if (originalEnv === undefined) {
+      delete process.env.NEXT_PUBLIC_API_URL;
+    } else {
+      process.env.NEXT_PUBLIC_API_URL = originalEnv;
+    }
+  });
+
+  it('converts https to wss', async () => {
+    vi.resetModules();
+    process.env.NEXT_PUBLIC_API_URL = 'https://robot.example.com/api/';
+    const { WebSocketClient: WsClient } = await import('./ws.client');
+    const client = new WsClient({ path: 'status' });
+    client.connect();
+    expect(capturedUrl).toMatch(/^wss:\/\//);
+    expect(capturedUrl).toContain('robot.example.com');
+  });
+
+  it('prepends ws:// when URL has no protocol', async () => {
+    vi.resetModules();
+    process.env.NEXT_PUBLIC_API_URL = 'robot.local:9090/api/';
+    const { WebSocketClient: WsClient } = await import('./ws.client');
+    const client = new WsClient({ path: 'feed' });
+    client.connect();
+    expect(capturedUrl).toBe('ws://robot.local:9090/api/feed');
+  });
+});
+
 describe('WebSocketClient', () => {
   describe('constructor and URL', () => {
     it('builds ws URL from http base', () => {
@@ -101,6 +132,26 @@ describe('WebSocketClient', () => {
       client.connect();
       expect(capturedUrl).not.toContain('//robot');
       expect(capturedUrl).toContain('/robot/status');
+    });
+
+    it('does not create a second socket when already open', () => {
+      const client = new WebSocketClient({ path: 'test' });
+      client.connect();
+      mockWsInstance.readyState = 1;
+      client.connect();
+      expect(WebSocketCtor).toHaveBeenCalledTimes(1);
+    });
+
+    it('does nothing when window is undefined (SSR)', () => {
+      const savedWindow = globalThis.window;
+      (globalThis as Record<string, unknown>).window = undefined;
+      try {
+        const client = new WebSocketClient({ path: 'test' });
+        client.connect();
+        expect(WebSocketCtor).not.toHaveBeenCalled();
+      } finally {
+        (globalThis as Record<string, unknown>).window = savedWindow;
+      }
     });
   });
 
@@ -121,6 +172,32 @@ describe('WebSocketClient', () => {
       client.connect();
       mockWsInstance.readyState = 1;
       expect(client.connectionState).toBe('open');
+    });
+
+    it('returns closed when socket readyState is CLOSING', () => {
+      const client = new WebSocketClient({ path: 'test' });
+      client.connect();
+      mockWsInstance.readyState = 2;
+      expect(client.connectionState).toBe('closed');
+    });
+
+    it('returns closed when socket readyState is CLOSED', () => {
+      const client = new WebSocketClient({ path: 'test' });
+      client.connect();
+      mockWsInstance.readyState = 3;
+      expect(client.connectionState).toBe('closed');
+    });
+
+    it('returns reconnecting when reconnect attempt is in progress', () => {
+      const client = new WebSocketClient({
+        path: 'test',
+        reconnectDelayMs: 500,
+      });
+      client.connect();
+      mockWsInstance.onclose?.({ wasClean: false } as CloseEvent);
+      vi.advanceTimersByTime(500);
+      mockWsInstance.readyState = 0;
+      expect(client.connectionState).toBe('reconnecting');
     });
   });
 
@@ -198,6 +275,39 @@ describe('WebSocketClient', () => {
       vi.advanceTimersByTime(10000);
       expect(WebSocketCtor).toHaveBeenCalledTimes(1);
     });
+
+    it('does not reconnect when reconnect is disabled', () => {
+      const client = new WebSocketClient({
+        path: 'test',
+        reconnect: false,
+      });
+      client.connect();
+      mockWsInstance.onclose?.({ wasClean: false } as CloseEvent);
+      vi.advanceTimersByTime(10000);
+      expect(WebSocketCtor).toHaveBeenCalledTimes(1);
+    });
+
+    it('stops reconnecting after maxReconnectAttempts', () => {
+      const client = new WebSocketClient({
+        path: 'test',
+        maxReconnectAttempts: 2,
+        reconnectDelayMs: 100,
+      });
+      client.connect();
+      expect(WebSocketCtor).toHaveBeenCalledTimes(1);
+
+      mockWsInstance.onclose?.({ wasClean: false } as CloseEvent);
+      vi.advanceTimersByTime(100);
+      expect(WebSocketCtor).toHaveBeenCalledTimes(2);
+
+      mockWsInstance.onclose?.({ wasClean: false } as CloseEvent);
+      vi.advanceTimersByTime(100);
+      expect(WebSocketCtor).toHaveBeenCalledTimes(3);
+
+      mockWsInstance.onclose?.({ wasClean: false } as CloseEvent);
+      vi.advanceTimersByTime(100);
+      expect(WebSocketCtor).toHaveBeenCalledTimes(3);
+    });
   });
 
   describe('disconnect', () => {
@@ -216,6 +326,18 @@ describe('WebSocketClient', () => {
     it('does not throw when no socket', () => {
       const client = new WebSocketClient({ path: 'test' });
       expect(() => client.disconnect()).not.toThrow();
+    });
+
+    it('cancels pending reconnect timeout on disconnect', () => {
+      const client = new WebSocketClient({
+        path: 'test',
+        reconnectDelayMs: 5000,
+      });
+      client.connect();
+      mockWsInstance.onclose?.({ wasClean: false } as CloseEvent);
+      client.disconnect();
+      vi.advanceTimersByTime(10000);
+      expect(WebSocketCtor).toHaveBeenCalledTimes(1);
     });
   });
 
