@@ -87,6 +87,7 @@ export class WebSocketClient<TMessage = unknown> {
 
     this.socket.onclose = (event: CloseEvent) => {
       this.callbacks.onClose?.(event);
+      this.socket = null;
       if (
         this.config.reconnect &&
         !event.wasClean &&
@@ -97,8 +98,6 @@ export class WebSocketClient<TMessage = unknown> {
           this.reconnectTimeoutId = null;
           this.connect();
         }, this.config.reconnectDelayMs);
-      } else {
-        this.socket = null;
       }
     };
 
