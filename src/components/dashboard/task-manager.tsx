@@ -53,7 +53,7 @@ export function TaskManager({
               <Label htmlFor="items">Contenu du plateau</Label>
               <Input
                 id="items"
-                placeholder="Médicaments du matin, verre d'eau"
+                placeholder="verre d'eau"
               />
             </div>
             <Button
