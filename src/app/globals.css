@@ -44,7 +44,8 @@
   --color-danger: #fb2c36;
   --color-success: #00c950;
   --color-warning: #f0b100;
-  --shadow-card: 0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px 0px rgba(0,0,0,0.1);
+  --shadow-card:
+    0px 1px 3px 0px rgba(0, 0, 0, 0.1), 0px 1px 2px 0px rgba(0, 0, 0, 0.1);
   --chart-1: #2563eb;
   --chart-2: #22c55e;
   --chart-3: #eab308;
