@@ -51,10 +51,7 @@ export function TaskManager({
             </div>
             <div className="space-y-2">
               <Label htmlFor="items">Contenu du plateau</Label>
-              <Input
-                id="items"
-                placeholder="verre d'eau"
-              />
+              <Input id="items" placeholder="verre d'eau" />
             </div>
             <Button
               className="w-full"
