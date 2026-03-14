@@ -4,7 +4,6 @@ import React from 'react';
 import Image from 'next/image';
 import { Battery, Wifi } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import logo from '../../../public/assets/logo.png';
 interface HeaderProps {
   isAutonomous: boolean;
 }
@@ -15,7 +14,7 @@ export function Header({ isAutonomous }: Readonly<HeaderProps>) {
       <div className="flex items-center gap-3">
         <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg ">
           <Image
-            src={logo}
+            src="/assets/logo.png"
             alt="Robocoop"
             width={60}
             height={60}
